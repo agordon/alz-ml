@@ -49,7 +49,7 @@ if page == "Home":
         st.markdown("---")
         st.write("Step 2: Medical Information")
         
-        apoe = st.text_input("5. What is your APOE genotype?")
+        apoe = st.radio("5. What is your APOE genotype?",['2/2','2/3','2/4','3/3','3/4','4/4'])
         input_dict['APOE_4'] = apoe.count('4')
         input_dict['APOE_2'] = apoe.count('2')
         dis = st.multiselect("6. Comorbidities",['Cardiovascular Issues','Head,Eyes,Nose,Ears, or Throat Issues','Muscoskeletal Issues','Gastrointestinal Issues','Psychiatric Issues','None'])
@@ -60,7 +60,7 @@ if page == "Home":
         if dis and apoe:
             st.markdown("---")
             st.write("Step 3: Cognitive Score Prediction") 
-            mmse1 = st.text_input("8. Most recent MMSE Score")
+            mmse1 = st.text_input("8. Most recent CDR-SB Score")
             input_dict['MMSE_baseline'] = mmse1 
             time = int(st.radio("9. Predict score after how many months?",[6,12,24]))
             #if mmse1:
@@ -81,9 +81,9 @@ if page == "Home":
                     linear_regression.fit(regdata.dropna(subset=[f'MMSE{str(val)}']).drop(['MMSE6',"MMSE12","MMSE18","MMSE24",'MMSE_slp','PTID'],axis=1), regdata[[f'MMSE{str(val)}']].dropna())
                     y.append(round(float(linear_regression.predict(np.array([values]))[0][0])))
                 fig, ax = plt.subplots()
-                ax.plot(x, y, label="MMSE")
+                ax.plot(x, y, label="CDR-SB")
                 ax.set_xlabel('Time(months)')
-                ax.set_ylabel('MMSE Score')
+                ax.set_ylabel('CDR-SB Score')
                 ax.set_title('Predicted MMSE Trajectory')
                 ax.legend()
 
