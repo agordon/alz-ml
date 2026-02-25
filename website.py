@@ -6,21 +6,29 @@ from sklearn.neighbors import NearestNeighbors
 import base64
 import matplotlib.pyplot as plt 
 
-regdata = pd.read_csv("ADNI-data/regdata1.csv")
-regdata.drop(['Unnamed: 0'], axis = 1, inplace = True)
+fake_file = False
+
+try:
+    regdata = pd.read_csv("ADNI-data/regdata2.csv")
+    regdata.drop(['Unnamed: 0'], axis = 1, inplace = True)
+    meds = pd.read_csv("ADNI-data/med_data2.csv")
+except FileNotFoundError:
+    regdata = pd.read_csv("MMSE_fake.csv")
+    meds = pd.read_csv("meds_fake.csv")
+    fake_file = True
 linear_regression = LinearRegression()
 regdata1 = regdata.drop(['MMSE6',"MMSE12","MMSE18","MMSE24",'MMSE_slp'],axis=1)
-meds = pd.read_csv("ADNI-data/med_data2.csv")
+
 
 st.set_page_config(
     page_title="MMSE Score Prediction",
 )
+if fake_file:
+    st.title("Alzheimer's Disease Machine Learning Model (FAKE DATA)")
+else:
+    st.title("Alzheimer's Disease Machine Learning Model")
 
-st.title("Alzheimer's Disease Machine Learning Model")
 
-time=0
-mmse1=0
-score=0
 st.sidebar.header("Navigation")
 page = st.sidebar.radio("Go to", ["Home", "Our Research",'Data'])
 input_dict = {}
@@ -30,15 +38,15 @@ if page == "Home":
     st.write("Step 1: Basic Demographic Information")
     age = st.text_input("1. What is your age?")
     input_dict['Age'] = age
-    gender = st.selectbox("2. What is your biological sex (ayo)?",['Male','Female'])
+    gender = st.selectbox("2. What is your biological sex ?",['Male','Female'])
     if gender == 'Male':
         input_dict['Male'] = 1
     else:
         input_dict['Male'] = 0
     #edu = st.text_input("3. How many years of formal education have you received (including grade school)?")
     #input_dict['PTEDUCAT'] = edu
-    st.markdown("---")
     if gender and age :
+        st.markdown("---")
         st.write("Step 2: Medical Information")
         
         apoe = st.text_input("5. What is your APOE genotype?")
@@ -49,15 +57,15 @@ if page == "Home":
             input_dict['card_issues'] = 1
         if 'Psychiatric Issues' in dis:
             input_dict['psych_issues'] = 1
-        st.markdown("---")
         if dis and apoe:
+            st.markdown("---")
             st.write("Step 3: Cognitive Score Prediction") 
             mmse1 = st.text_input("8. Most recent MMSE Score")
             input_dict['MMSE_baseline'] = mmse1 
             time = int(st.radio("9. Predict score after how many months?",[6,12,24]))
-            st.markdown("---")
             #if mmse1:
             if mmse1 and time:
+                st.markdown("---")
                 for col in regdata1.drop('PTID',axis=1).columns:
                     if col in input_dict:
                         values.append(int(input_dict[col]))
@@ -130,16 +138,21 @@ elif page == "Our Research":
         with open(file_path, "rb") as f:
             base64_pdf = base64.b64encode(f.read()).decode('utf-8')
 
-        # 2. Create the HTML iframe
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="700" height="1000" type="application/pdf"></iframe>'
+        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="900" height="1000" type="application/pdf"></iframe>'
 
-        # 3. Render the PDF in the app
         st.markdown(pdf_display, unsafe_allow_html=True)
 
     display_pdf("CYSF 2026 Paper_ Comparing Longitudinal Effectiveness of Existing Alzheimer’s Disease Treatments.pdf")
 else:
     st.subheader("Data Collection and Methods")
-    st.write('We used ADNI data to train our machine learning model. ADNI is a longutitudinal study')
+    st.write('''We used ADNI data to train our machine learning model. The Alzheimer's Disease Neuroimaging Initiative is a longutitudinal study that has collected data
+             for many years in order to capture long term trends in Alzheimer's disease progression. It is devoted to providing researchers around the world with 
+             free, real-world, patient level data in order to expand the field of neuroscience. In order to make this model, ADNI data was cleaned and the needed features were
+             isolated and trained on a regression model. Afterwards, propensity score matching was utilized in order to ensure a fair comparison of the control and treated groups 
+             in the training dataset. This method matches treated patients with similar, untreated patients and compares the cognitive scores of both. This was done for every treatment. 
+             When a new patient enters their data, they are fitted on the trained model in order to predict their future CDR-SB score. They are also matched up with similar treated patients in
+             order to recommend a certain Alzheimer's treatment.
+              ''')
 
 st.markdown("---")
 st.caption("By: Taha Farooq & Manan Vyas")
