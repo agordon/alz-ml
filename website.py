@@ -11,7 +11,7 @@ fake_file = False
 try:
     regdata = pd.read_csv("ADNI-data/regdata2.csv")
     regdata.drop(['Unnamed: 0'], axis = 1, inplace = True)
-    meds = pd.read_csv("ADNI-data/med_data2.csv")
+    meds = pd.read_csv("ADNI-data/med_data3.csv")
 except FileNotFoundError:
     regdata = pd.read_csv("MMSE_fake.csv")
     meds = pd.read_csv("meds_fake.csv")
