@@ -18,7 +18,20 @@ except FileNotFoundError:
     fake_file = True
 linear_regression = LinearRegression()
 regdata1 = regdata.drop(['MMSE6',"MMSE12","MMSE18","MMSE24",'MMSE_slp'],axis=1)
+regdata = regdata[~regdata['PTID'].isin(['136_S_0873','007_S_0293','021_S_0424'])]
 
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #f7e8e6
+
+;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 st.set_page_config(
     page_title="MMSE Score Prediction",
@@ -34,11 +47,18 @@ page = st.sidebar.radio("Go to", ["Home", "Our Research",'Data'])
 input_dict = {}
 values =[]
 if page == "Home":
+    st.write('''This website predicts the Clinical Dementia Rating - Sum of Boxes (CDR-SB) score of an Alzheimer's patient at a future
+         point in time, taking current information into consideration. CDR-SB is a cognitive measurement ranging from 0.0 to 18.0 that tests 
+            cognitive functioning through evaluating memory, orientation, problem solving , community affairs, hobbies and personal care.
+             This website also predicts a cognitive trajectory over time and recommends a treatment by matching the patient with treated patients
+             based on other parameters and comparing their scores. The treatment group with the lowest score is recommended to the patient. 
+''')
     st.subheader("Please enter the following information to the best of your ability:")
-    st.write("Step 1: Basic Demographic Information")
+    st.write('Note: Remember to click enter after filling out each entry.')
+    st.write("**Step 1: Basic Demographic Information**")
     age = st.text_input("1. What is your age?")
     input_dict['Age'] = age
-    gender = st.selectbox("2. What is your biological sex ?",['Male','Female'])
+    gender = st.selectbox("2. What is your biological sex?",['Male','Female'])
     if gender == 'Male':
         input_dict['Male'] = 1
     else:
@@ -47,19 +67,36 @@ if page == "Home":
     #input_dict['PTEDUCAT'] = edu
     if gender and age :
         st.markdown("---")
-        st.write("Step 2: Medical Information")
+        st.write("**Step 2: Medical Information**")
         
-        apoe = st.radio("5. What is your APOE genotype?",['2/2','2/3','2/4','3/3','3/4','4/4'])
+        st.markdown(
+            '''<small style = 'font-size:14.3px; '>5. What is your APOE genotype? '''
+            '''<span style='cursor:help;' title="The APOE gene influences Alzheimer's disease progression. The '2' variation is preventative, '3' is neutral, and '4' is predisposing.">ⓘ</span></small>''', 
+            unsafe_allow_html=True
+        )
+
+        # 2. The Input
+        apoe = st.radio(
+            "Select Genotype",
+            ['2/2','2/3','2/4','3/3','3/4','4/4'],
+            label_visibility="collapsed"
+        )
         input_dict['APOE_4'] = apoe.count('4')
         input_dict['APOE_2'] = apoe.count('2')
-        dis = st.multiselect("6. Comorbidities",['Cardiovascular Issues','Head,Eyes,Nose,Ears, or Throat Issues','Muscoskeletal Issues','Gastrointestinal Issues','Psychiatric Issues','None'])
+        st.markdown(
+            '''<small style = 'font-size:14.3px; '>6. Comorbidities(Select all that apply): '''
+            '''<span style='cursor:help;' title="Comorbidities are other, coexisting diseases that can worsen Alzheimer's disease progression.">ⓘ</span></small>''', 
+            unsafe_allow_html=True
+        )
+        dis = st.multiselect("select",['Cardiovascular Issues','Head,Eyes,Nose,Ears, or Throat Issues','Musculoskeletal Issues','Gastrointestinal Issues','Psychiatric Issues','None'], label_visibility="collapsed")
+
         if 'Cardiovascular Issues' in dis:
             input_dict['card_issues'] = 1
         if 'Psychiatric Issues' in dis:
             input_dict['psych_issues'] = 1
         if dis and apoe:
             st.markdown("---")
-            st.write("Step 3: Cognitive Score Prediction") 
+            st.write("**Step 3: Cognitive Score Prediction**") 
             mmse1 = st.text_input("8. Most recent CDR-SB Score")
             input_dict['MMSE_baseline'] = mmse1 
             time = int(st.radio("9. Predict score after how many months?",[6,12,24]))
@@ -68,26 +105,40 @@ if page == "Home":
                 st.markdown("---")
                 for col in regdata1.drop('PTID',axis=1).columns:
                     if col in input_dict:
-                        values.append(int(input_dict[col]))
+                        values.append(float(input_dict[col]))
                     else:
                         values.append(0)
                 linear_regression.fit(regdata.dropna(subset=[f'MMSE{str(time)}']).drop(['MMSE6',"MMSE12","MMSE18","MMSE24",'MMSE_slp','PTID'],axis=1), regdata[[f'MMSE{str(time)}']].dropna())
-                score = round(float(linear_regression.predict(np.array([values]))[0][0]))
-                st.metric("Predicted Score:", score,score-int(mmse1))
+                score = round(float(linear_regression.predict(np.array([values]))[0][0])*2)/2
+                if score <0:
+                    score = 0
+                elif score >18:
+                    score = 18
+                st.metric("Predicted Score:", str(score)+' Points','Change: ' +str(round((score -float(mmse1))*2)/2),delta_color="inverse")
 
-                x = [6, 12, 24]
+                x = [0, 6, 12, 24]
                 y=[]
-                for val in x:
-                    linear_regression.fit(regdata.dropna(subset=[f'MMSE{str(val)}']).drop(['MMSE6',"MMSE12","MMSE18","MMSE24",'MMSE_slp','PTID'],axis=1), regdata[[f'MMSE{str(val)}']].dropna())
-                    y.append(round(float(linear_regression.predict(np.array([values]))[0][0])))
+                for val in ['_baseline', 6, 12, 24]:
+                    if type(val) == str:
+                        y.append(float(mmse1))
+                    else:
+                        linear_regression.fit(regdata.dropna(subset=[f'MMSE{str(val)}']).drop(['MMSE6',"MMSE12","MMSE18","MMSE24",'MMSE_slp','PTID'],axis=1), regdata[[f'MMSE{str(val)}']].dropna())
+                        score = round(float(linear_regression.predict(np.array([values]))[0][0])*2)/2
+                        if score <0:
+                            score = 0
+                        elif score >18:
+                            score = 18
+                        y.append(score)
                 fig, ax = plt.subplots()
                 ax.plot(x, y, label="CDR-SB")
+                ax.set_ylim(float(mmse1), y[-1])
+                ax.set_yticks(np.arange(float(mmse1),y[-1]+1,0.5))
+                print(list(np.arange(float(mmse1),y[-1]+1,0.5)))
+                
                 ax.set_xlabel('Time(months)')
                 ax.set_ylabel('CDR-SB Score')
-                ax.set_title('Predicted MMSE Trajectory')
+                ax.set_title('Predicted CDR-SB Trajectory')
                 ax.legend()
-
-                # 4. Display the plot in Streamlit
                 st.pyplot(fig)
                 #score = decline+int(mmse1)
                 #st.line_chart(data)
@@ -129,8 +180,8 @@ if page == "Home":
                     #treated = treated.reset_index(drop=True)
                     #matched_control = control.iloc[list(indices.flatten())]
                     #matched_control = matched_control.reset_index(drop=True)
-                    slope_dict[treatment]=int(regdata.iloc[indices[0],[6]].mean())
-                st.metric("Reccomended Treatment:", max(slope_dict, key=slope_dict.get)[4:].capitalize())
+                    slope_dict[treatment]=float(regdata.iloc[indices[0],[3]].mean())
+                st.metric("Recommended Treatment:", min(slope_dict, key=slope_dict.get)[4:].capitalize())
 elif page == "Our Research":
 
     def display_pdf(file_path):
@@ -145,7 +196,7 @@ elif page == "Our Research":
     display_pdf("CYSF 2026 Paper_ Comparing Longitudinal Effectiveness of Existing Alzheimer’s Disease Treatments.pdf")
 else:
     st.subheader("Data Collection and Methods")
-    st.write('''We used ADNI data to train our machine learning model. The Alzheimer's Disease Neuroimaging Initiative is a longutitudinal study that has collected data
+    st.write('''We used Alzheimer's Disease Neuroimaging Initiative( ADNI) data to train our machine learning model. ADNI is a longutitudinal study that has collected data
              for many years in order to capture long term trends in Alzheimer's disease progression. It is devoted to providing researchers around the world with 
              free, real-world, patient level data in order to expand the field of neuroscience. In order to make this model, ADNI data was cleaned and the needed features were
              isolated and trained on a regression model. Afterwards, propensity score matching was utilized in order to ensure a fair comparison of the control and treated groups 
