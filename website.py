@@ -20,19 +20,6 @@ linear_regression = LinearRegression()
 regdata1 = regdata.drop(['MMSE6',"MMSE12","MMSE18","MMSE24",'MMSE_slp'],axis=1)
 regdata = regdata[~regdata['PTID'].isin(['136_S_0873','007_S_0293','021_S_0424'])]
 
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background-color: #f7e8e6
-
-;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
 st.set_page_config(
     page_title="MMSE Score Prediction",
 )
@@ -131,9 +118,9 @@ if page == "Home":
                         y.append(score)
                 fig, ax = plt.subplots()
                 ax.plot(x, y, label="CDR-SB")
-                ax.set_ylim(float(mmse1), y[-1])
-                ax.set_yticks(np.arange(float(mmse1),y[-1]+1,0.5))
-                print(list(np.arange(float(mmse1),y[-1]+1,0.5)))
+                ax.set_ylim(min(y)-1,max(y)+1)
+                ax.set_yticks(np.arange(min(y)-1,max(y)+1,0.5))
+                #print(list(np.arange(float(mmse1),y[-1]+1,0.5)))
                 
                 ax.set_xlabel('Time(months)')
                 ax.set_ylabel('CDR-SB Score')
