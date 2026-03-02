@@ -28,7 +28,6 @@ if fake_file:
 else:
     st.title("Alzheimer's Disease Machine Learning Model")
 
-
 st.sidebar.header("Navigation")
 page = st.sidebar.radio("Go to", ["Home", "Our Research",'Data'])
 input_dict = {}
@@ -52,43 +51,43 @@ if page == "Home":
         input_dict['Male'] = 0
     #edu = st.text_input("3. How many years of formal education have you received (including grade school)?")
     #input_dict['PTEDUCAT'] = edu
-    if gender and age :
+    if gender and age:
+        #st.session_state['input'] = input_dict
+    #if ('input' in st.session_state.keys()) and ('Male' in st.session_state['input'].keys()) and ('Age' in st.session_state['input'].keys()):
         st.markdown("---")
         st.write("**Step 2: Medical Information**")
         
-        st.markdown(
-            '''<small style = 'font-size:14.3px; '>5. What is your APOE genotype? '''
-            '''<span style='cursor:help;' title="The APOE gene influences Alzheimer's disease progression. The '2' variation is preventative, '3' is neutral, and '4' is predisposing.">ⓘ</span></small>''', 
-            unsafe_allow_html=True
-        )
-
         # 2. The Input
         apoe = st.radio(
-            "Select Genotype",
-            ['2/2','2/3','2/4','3/3','3/4','4/4'],
-            label_visibility="collapsed"
+            "5. What is your APOE genotype?",
+            ['2/2','2/3','2/4','3/3','3/4','4/4','I do not know'],
+            help = "The APOE gene influences Alzheimer's disease progression. The '2' variation is preventative, '3' is neutral, and '4' is predisposing."
         )
         input_dict['APOE_4'] = apoe.count('4')
         input_dict['APOE_2'] = apoe.count('2')
-        st.markdown(
-            '''<small style = 'font-size:14.3px; '>6. Comorbidities(Select all that apply): '''
-            '''<span style='cursor:help;' title="Comorbidities are other, coexisting diseases that can worsen Alzheimer's disease progression.">ⓘ</span></small>''', 
-            unsafe_allow_html=True
-        )
-        dis = st.multiselect("select",['Cardiovascular Issues','Head,Eyes,Nose,Ears, or Throat Issues','Musculoskeletal Issues','Gastrointestinal Issues','Psychiatric Issues','None'], label_visibility="collapsed")
+        
+        dis = st.multiselect("6. Comorbidities(Select all that apply):",['Cardiovascular Issues','Head,Eyes,Nose,Ears, or Throat Issues','Musculoskeletal Issues','Gastrointestinal Issues','Psychiatric Issues','None'], help = "Comorbidities are other, coexisting diseases that can worsen Alzheimer's disease progression.")
 
         if 'Cardiovascular Issues' in dis:
             input_dict['card_issues'] = 1
+        else:
+            input_dict['card_issues'] = 0
+
         if 'Psychiatric Issues' in dis:
             input_dict['psych_issues'] = 1
         if dis and apoe:
+         #   st.session_state['input'] = input_dict
+        #if ('APOE_4' in st.session_state['input'].keys()) and ('card_issues' in st.session_state['input'].keys()): #and ('card_issues' in st.session_state['input'].keys()):
             st.markdown("---")
             st.write("**Step 3: Cognitive Score Prediction**") 
             mmse1 = st.text_input("8. Most recent CDR-SB Score")
             input_dict['MMSE_baseline'] = mmse1 
             time = int(st.radio("9. Predict score after how many months?",[6,12,24]))
             #if mmse1:
-            if mmse1 and time:
+            if time and mmse1:
+                #st.session_state['input'] = input_dict
+                #st.session_state['time'] = time
+            #if ('time' in st.session_state.keys()) and ('MMSE_baseline' in st.session_state['input'].keys()):
                 st.markdown("---")
                 for col in regdata1.drop('PTID',axis=1).columns:
                     if col in input_dict:
@@ -168,18 +167,39 @@ if page == "Home":
                     #matched_control = control.iloc[list(indices.flatten())]
                     #matched_control = matched_control.reset_index(drop=True)
                     slope_dict[treatment]=float(regdata.iloc[indices[0],[3]].mean())
-                st.metric("Recommended Treatment:", min(slope_dict, key=slope_dict.get)[4:].capitalize())
+                st.metric("Recommended Treatment is:", min(slope_dict, key=slope_dict.get)[4:].capitalize())
+                st.write("which was predicted to be the treatment that minimizes CDR-SB score for similar subtypes of patients.")
 elif page == "Our Research":
 
     def display_pdf(file_path):
-        # 1. Read the file as binary
         with open(file_path, "rb") as f:
-            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+            pdf_bytes = f.read()
+            base64_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
 
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="900" height="1000" type="application/pdf"></iframe>'
+        user_agent = st.context.headers.get("User-Agent", "").lower()
+        is_mobile = ("iphone" in user_agent 
+                    or "android" in user_agent 
+                    or "mobile" in user_agent)
 
-        st.markdown(pdf_display, unsafe_allow_html=True)
-
+        if is_mobile:
+            
+            st.warning("Your device cannot display PDFs inline. Please download it instead:")
+            st.download_button(
+                "Download PDF",
+                data=pdf_bytes,
+                file_name="document.pdf",
+                mime="application/pdf"
+            )
+        else:
+            
+            pdf_html = f"""
+                <iframe 
+                    src="data:application/pdf;base64,{base64_pdf}" 
+                    width="100%" 
+                    height="800px">
+                </iframe>
+            """
+            st.markdown(pdf_html, unsafe_allow_html=True)
     display_pdf("CYSF 2026 Paper_ Comparing Longitudinal Effectiveness of Existing Alzheimer’s Disease Treatments.pdf")
 else:
     st.subheader("Data Collection and Methods")
