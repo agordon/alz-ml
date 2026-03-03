@@ -21,7 +21,7 @@ regdata1 = regdata.drop(['MMSE6',"MMSE12","MMSE18","MMSE24",'MMSE_slp'],axis=1)
 regdata = regdata[~regdata['PTID'].isin(['136_S_0873','007_S_0293','021_S_0424'])]
 
 st.set_page_config(
-    page_title="MMSE Score Prediction",
+    page_title="CDR-SB Score Prediction",
 )
 if fake_file:
     st.title("Alzheimer's Disease Machine Learning Model (FAKE DATA)")
@@ -32,6 +32,33 @@ st.sidebar.header("Navigation")
 page = st.sidebar.radio("Go to", ["Home", "Our Research",'Data'])
 input_dict = {}
 values =[]
+query_params = st.query_params
+
+import os
+
+def count_unique_visitors():
+    file_path = "unique_ips.txt"
+
+    visitor_ip = st.context.headers.get("X-Forwarded-For") or st.context.headers.get("Remote-Addr", "unknown")
+
+    if not os.path.exists(file_path):
+        with open(file_path, "w") as f:
+            f.write("")
+
+    with open(file_path, "r") as f:
+        unique_ips = set(line.strip() for line in f if line.strip())
+
+    if visitor_ip not in unique_ips and visitor_ip != "unknown":
+        with open(file_path, "a") as f:
+            f.write(visitor_ip + "\n")
+        unique_ips.add(visitor_ip)
+
+    return len(unique_ips)
+unique_count = count_unique_visitors()
+if query_params.get("view") == "admin":
+    st.sidebar.markdown("---")
+    st.sidebar.write(f"Unique Number of Visitors: **{unique_count}**")
+
 if page == "Home":
     st.write('''This website predicts the Clinical Dementia Rating - Sum of Boxes (CDR-SB) score of an Alzheimer's patient at a future
          point in time, taking current information into consideration. CDR-SB is a cognitive measurement ranging from 0.0 to 18.0 that tests 
